@@ -1,131 +1,171 @@
 import pygame
-
+import random
+import os
 pygame.init()
+
+directX = random.randint(0, 1)
+directY = random.randint(0, 1)
 
 
 class field:
     def __init__(self):
         self.WIDTH = 900
         self.HEIGHT = 500
+        self.bord_center = (self.WIDTH//2, self.HEIGHT//2)
         self.FPS = 60
         self.window = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        self.background = pygame.transform.scale(pygame.image.load
+                                                 (os.path.join
+                                                  ("assets",
+                                                   "background",
+                                                   "industrial-background.jpg")
+                                                  ),
+                                                 (self.WIDTH, self.HEIGHT)
+                                                 )
         pygame.display.set_caption('PONG')
 
-    def draw(self, left, right, boll):
+    def draw(self, left, right, ball):
         self.window.fill((0, 0, 0))
-        pygame.draw.rect(self.window, (255, 255, 255), left)
-        pygame.draw.rect(self.window, (255, 255, 255), right)
-        pygame.draw.circle(self.window, (255, 255, 255),
-                           (b.circleX, b.circleY),
-                           b.circleRad,
-                           b.circleWidth)
+        self.window.blit(self.background, (0, 0))
+        pygame.draw.rect(self.window, left.paddle_color, left.shape_paddle)
+        pygame.draw.rect(self.window, right.paddle_color, right.shape_paddle)
+        pygame.draw.circle(self.window, ball.ball_color,
+                           (ball.ball_x, ball.ball_y),
+                           ball.ball_rad,
+                           ball.ball_width)
         pygame.display.flip()
 
 
-class paddleLeft(field):
-    def __init__(self):
+class paddle(field):
+    def __init__(self, site):
         super().__init__()
-        self.rectWIDTH = self.WIDTH//80
-        self.rectHEIGHT = self.HEIGHT//5
-        self.rectPOSITION = (0, 0)
-        self.rectCOLOR = (255, 255, 255)
-        self.absolutePosition = 0
-        self.VEL = 10
-        self.rect = pygame.draw.rect(self.window,
-                                     self.rectCOLOR,
-                                     pygame.Rect(
-                                     self.rectPOSITION[0],
-                                     self.rectPOSITION[1],
-                                     self.rectWIDTH,
-                                     self.rectHEIGHT))
+        self.paddle_width = self.WIDTH//80
+        self.paddle_hight = self.HEIGHT//5
+        if site == "left":
+            self.paddle_position = (0, 0)
+        if site == "right":
+            self.paddle_position = (self.WIDTH - self.WIDTH//80, 0)
+        self.paddle_color = (0, 0, 0)
+        self.paddle_absolut_position = 0
+        self.paddle_vel = 10
+        self.shape_paddle = pygame.draw.rect(self.window,
+                                             self.paddle_color,
+                                             pygame.
+                                             Rect(self.paddle_position[0],
+                                                  self.paddle_position[1],
+                                                  self.paddle_width,
+                                                  self.paddle_hight))
 
-    def liftUpRect(self):
-        if self.rect.y > 0:
-            self.rect.y -= 1 * self.VEL
-        print(self.rect.y)
+    def go_up(self):
+        if self.shape_paddle.y > 0:
+            self.shape_paddle.y -= 1 * self.paddle_vel
 
-    def liftDownRect(self):
+    def go_down(self):
         _, height = self.window.get_size()
-        if self.rect.y < height - self.rectHEIGHT:
-            self.rect.y += 1 * self.VEL
-        print(self.rect.y)
+        if self.shape_paddle.y < height - self.paddle_hight:
+            self.shape_paddle.y += 1 * self.paddle_vel
 
 
-class paddleRight(field):
-    def __init__(self):
+class ball(field):
+    def __init__(self, paddle_right, paddle_left):
         super().__init__()
-        self.rectWIDTH = self.WIDTH//80
-        self.rectHEIGHT = self.HEIGHT//5
-        self.rectPOSITION = (self.WIDTH - self.WIDTH//80, 0)
-        self.rectCOLOR = (255, 255, 255)
-        self.absolutePosition = 0
-        self.VEL = 10
-        self.rect = pygame.draw.rect(self.window,
-                                     self.rectCOLOR,
-                                     pygame.Rect(
-                                     self.rectPOSITION[0],
-                                     self.rectPOSITION[1],
-                                     self.rectWIDTH,
-                                     self.rectHEIGHT))
+        self.ball_x = self.WIDTH//2
+        self.ball_y = self.HEIGHT//2
+        self.ball_rad = 10
+        self.ball_color = (0, 0, 0)
+        self.ball_width = 10
+        self.ball_vel = 10
+        self.ball_shape =pygame.draw.circle(self.window,
+                                            self.ball_color,
+                                            (self.ball_x, self.ball_y),
+                                            self.ball_rad,
+                                            self.ball_width)
+        self.paddle_right = paddle_right
+        self.paddle_left = paddle_left
 
-    def liftUpRect(self):
-        if self.rect.y > 0:
-            self.rect.y -= 1 * self.VEL
-        print(self.rect.y)
+    def checkCollideLeft(self):
+        if self.paddle_left.shape_paddle.collidepoint(self.ball_x, self.ball_y):
+            return True
+        centerPt = pygame.math.Vector2(self.ball_x, self.ball_y)
+        cornerPts = [self.paddle_left.shape_paddle.bottomleft,
+                     self.paddle_left.shape_paddle.bottomright,
+                     self.paddle_left.shape_paddle.topleft,
+                     self.paddle_left.shape_paddle.topright]
+        if [p for p in cornerPts if pygame.math.Vector2(p).distance_to(centerPt) <= self.ball_rad]:
+            return True
+        return False
 
-    def liftDownRect(self):
-        _, height = self.window.get_size()
-        if self.rect.y < height - self.rectHEIGHT:
-            self.rect.y += 1 * self.VEL
-        print(self.rect.y)
-
-
-class boll(field):
-    def __init__(self):
-        super().__init__()
-        self.circleX = self.WIDTH//2
-        self.circleY = self.HEIGHT//2
-        self.circleRad = 10
-        self.circleCOLOR = (255, 255, 255)
-        self.circleWidth = 10
-        self.VEL = 10
-        self.rect =pygame.draw.circle(self.window,
-                                      self.circleCOLOR,
-                                      (self.circleX, self.circleY),
-                                      self.circleRad,
-                                      self.circleWidth)
+    def checkCollideRight(self):
+        if self.paddle_right.shape_paddle.collidepoint(self.ball_x, self.ball_y):
+            return True
+        centerPt = pygame.math.Vector2(self.ball_x, self.ball_y)
+        cornerPts = [self.paddle_right.shape_paddle.bottomleft,
+                     self.paddle_right.shape_paddle.bottomright,
+                     self.paddle_right.shape_paddle.topleft,
+                     self.paddle_right.shape_paddle.topright]
+        if [p for p in cornerPts if pygame.math.Vector2(p).distance_to(centerPt) <= self.ball_rad]:
+            return True
+        return False
 
     def move(self):
-        self.circleX += 1 * self.VEL
+        global directX
+        if directX == 0:
+            self.ball_x += 1 * self.ball_vel
+            if self.checkCollideRight():
+                directX = 1
+        elif directX == 1:
+            self.ball_x -= 1 * self.ball_vel
+            if self.checkCollideLeft():
+                directX = 0
+
+        global directY
+        if directY == 0:
+            self.ball_y += 1
+            if self.ball_y >= self.HEIGHT:
+                directY = 1
+        elif directY == 1:
+            self.ball_y -= 1 * self.ball_vel
+            self.ball_shape.y -= 1 * self.ball_vel
+            if self.ball_y < 0:
+                directY = 0
+
+        if self.ball_x < 0:
+            self.ball_x = self.bord_center[0]
+            self.ball_y = self.bord_center[1]
+        if self.ball_x >= self.WIDTH:
+            self.ball_x = self.bord_center[0]
+            self.ball_y= self.bord_center[1]
 
 
 gameFiled = field()
 
-pR = paddleRight()
-pL = paddleLeft()
-b = boll()
+pR = paddle("right")
+pL = paddle("left")
+b = ball(pR, pL)
 
 
 def main():
     clock = pygame.time.Clock()
     run = True
+
     while run:
         clock.tick(gameFiled.FPS)
+        gameFiled.window.blit(gameFiled.background, (0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
         key_pressed = pygame.key.get_pressed()
         if key_pressed[pygame.K_UP]:
-            pR.liftUpRect()
+            pR.go_up()
         if key_pressed[pygame.K_DOWN]:
-            pR.liftDownRect()
+            pR.go_down()
         if key_pressed[pygame.K_q]:
-            pL.liftUpRect()
+            pL.go_up()
         if key_pressed[pygame.K_a]:
-            pL.liftDownRect()
+            pL.go_down()
         b.move()
-        gameFiled.draw(pL.rect, pR.rect, b.rect)
+        gameFiled.draw(pL, pR, b)
 
 
 if __name__ == "__main__":
