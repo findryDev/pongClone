@@ -11,7 +11,7 @@ class field:
     def __init__(self):
         self.WIDTH = 900
         self.HEIGHT = 500
-        self.bord_center = (self.WIDTH//2, self.HEIGHT//2)
+        self.field_center = (self.WIDTH//2, self.HEIGHT//2)
         self.FPS = 60
         self.window = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.background = pygame.transform.scale(pygame.image.load
@@ -55,15 +55,23 @@ class paddle(field):
                                                   self.paddle_position[1],
                                                   self.paddle_width,
                                                   self.paddle_hight))
+        self.up = False
+        self.down = False
 
     def go_up(self):
         if self.shape_paddle.y > 0:
             self.shape_paddle.y -= 1 * self.paddle_vel
+        self.up = True
 
     def go_down(self):
         _, height = self.window.get_size()
         if self.shape_paddle.y < height - self.paddle_hight:
             self.shape_paddle.y += 1 * self.paddle_vel
+        self.down = True
+
+    def if_paddle_in_place(self):
+        self.up = False
+        self.down = False
 
 
 class ball(field):
@@ -108,17 +116,46 @@ class ball(field):
         return False
 
     def move(self):
+        global directY
         global directX
         if directX == 0:
             self.ball_x += 1 * self.ball_vel
             if self.checkCollideRight():
                 directX = 1
+                if self.paddle_right.up:
+                    self.ball_y += 1 * self.ball_vel * 10
+                    if self.ball_y >= self.HEIGHT:
+                        directY = 1
+                elif self.paddle_right.down:
+                    self.ball_y -= 1 * self.ball_vel * 10
+                    #self.ball_shape.y -= 1 * self.ball_vel
+                    if self.ball_y < 0:
+                        directY = 0
+                else:
+                    pass
         elif directX == 1:
             self.ball_x -= 1 * self.ball_vel
             if self.checkCollideLeft():
                 directX = 0
+                if self.paddle_left.up:
+                    self.ball_y += 1
+                    if self.ball_y >= self.HEIGHT:
+                        directY = 1
+                elif self.paddle_left.down:
+                    self.ball_y -= 1 * self.ball_vel
+                    #self.ball_shape.y -= 1 * self.ball_vel
+                    if self.ball_y < 0:
+                        directY = 0
+                else:
+                    pass
+        if self.ball_x < 0:
+            self.ball_x = self.field_center[0]
+            self.ball_y = self.field_center[1]
+        if self.ball_x >= self.WIDTH:
+            self.ball_x = self.field_center[0]
+            self.ball_y= self.field_center[1]
 
-        global directY
+        '''
         if directY == 0:
             self.ball_y += 1
             if self.ball_y >= self.HEIGHT:
@@ -128,13 +165,8 @@ class ball(field):
             self.ball_shape.y -= 1 * self.ball_vel
             if self.ball_y < 0:
                 directY = 0
+        '''
 
-        if self.ball_x < 0:
-            self.ball_x = self.bord_center[0]
-            self.ball_y = self.bord_center[1]
-        if self.ball_x >= self.WIDTH:
-            self.ball_x = self.bord_center[0]
-            self.ball_y= self.bord_center[1]
 
 
 gameFiled = field()
@@ -165,6 +197,8 @@ def main():
         if key_pressed[pygame.K_a]:
             pL.go_down()
         b.move()
+        pL.if_paddle_in_place()
+        pR.if_paddle_in_place()
         gameFiled.draw(pL, pR, b)
 
 
